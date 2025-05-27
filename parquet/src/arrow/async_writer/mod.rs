@@ -215,18 +215,33 @@ impl<W: AsyncFileWriter> AsyncArrowWriter<W> {
     /// After every sync write by the inner [ArrowWriter], the inner buffer will be
     /// checked and flush if at least half full
     pub async fn write(&mut self, batch: &RecordBatch) -> Result<()> {
+        println!("before arrow writer write at {:?}:{:?}", file!(), line!());
+
         let before = self.sync_writer.flushed_row_groups().len();
         self.sync_writer.write(batch)?;
+
+        println!("after arrow writer write at {:?}:{:?}", file!(), line!());
+
         if before != self.sync_writer.flushed_row_groups().len() {
             self.do_write().await?;
         }
+
+        println!("after arrow writer do writer at {:?}:{:?}", file!(), line!());
+
         Ok(())
     }
 
     /// Flushes all buffered rows into a new row group
     pub async fn flush(&mut self) -> Result<()> {
+        println!("before async writer flush at {:?}:{:?}", file!(), line!());
+
         self.sync_writer.flush()?;
+
+        println!("after async writer flush at {:?}:{:?}", file!(), line!());
+
         self.do_write().await?;
+
+        println!("after async writer do write at {:?}:{:?}", file!(), line!());
 
         Ok(())
     }
@@ -246,11 +261,20 @@ impl<W: AsyncFileWriter> AsyncArrowWriter<W> {
     ///
     /// Attempting to write after calling finish will result in an error
     pub async fn finish(&mut self) -> Result<FileMetaData> {
+        println!("before async writer finish at {:?}:{:?}", file!(), line!());
+
         let metadata = self.sync_writer.finish()?;
+
+        println!("after async writer finish at {:?}:{:?}", file!(), line!());
 
         // Force to flush the remaining data.
         self.do_write().await?;
+
+        println!("after async writer do write at {:?}:{:?}", file!(), line!());
+
         self.async_writer.complete().await?;
+
+        println!("after async writer complete at {:?}:{:?}", file!(), line!());
 
         Ok(metadata)
     }
